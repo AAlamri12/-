@@ -1,0 +1,153 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>لوحتي — السبورة التفاعلية</title>
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<style>
+:root{--ink:#20283b;--muted:#6b7280;--line:#e4e8f0;--purple:#6657e8;--pink:#ff6f91;--paper:#fff;--bg:#f4f6fb}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);font-family:Tahoma,"Segoe UI",Arial,sans-serif;color:var(--ink)}
+header{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:17px clamp(14px,4vw,40px);background:#fff;border-bottom:1px solid var(--line)}
+.brand{display:flex;align-items:center;gap:12px}.logo{width:43px;height:43px;border-radius:14px;background:linear-gradient(135deg,#786cff,#b2a9ff);display:grid;place-items:center;color:#fff;font-size:24px;box-shadow:0 7px 18px #6657e833}
+h1{font-size:20px;margin:0;letter-spacing:-.4px}.subtitle{font-size:12px;color:var(--muted);margin-top:4px}.pill{font-size:12px;padding:8px 11px;border-radius:99px;background:#f0efff;color:#5749d5;font-weight:700}.header-tools{display:flex;align-items:center;gap:9px;flex-wrap:wrap;justify-content:flex-end}.clock-pill{font-size:12px;padding:8px 11px;border-radius:12px;background:#f7f8fc;border:1px solid var(--line);color:var(--ink);font-weight:700;white-space:nowrap}.clock-pill small{display:block;font-size:10px;color:var(--muted);font-weight:400;margin-top:3px}
+main{max-width:1500px;margin:auto;padding:clamp(12px,3vw,28px);display:grid;grid-template-columns:minmax(0,1fr) 300px;gap:18px}
+.board-wrap{min-width:0}.board-top{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:12px}.board-top h2{font-size:16px;margin:0}.hint{font-size:12px;color:var(--muted)}
+.whiteboard{position:relative;background:#fff;border:1px solid #e9ebf2;border-radius:20px;height:min(63vh,720px);min-height:390px;overflow:hidden;box-shadow:0 12px 35px #27345b0b;touch-action:none}
+#drawing{position:absolute;inset:0;width:100%;height:100%;touch-action:none}
+.board-message{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;flex-direction:column;pointer-events:none;text-align:center;padding:24px;background:#ffffffdd;z-index:2}
+.board-message .spark{font-size:40px;margin-bottom:10px}.board-message strong{font-size:clamp(20px,3vw,29px)}.board-message span{font-size:14px;color:var(--muted);margin-top:8px}
+.name-card{display:none;position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:min(82%,440px);padding:25px 20px;text-align:center;border-radius:23px;background:linear-gradient(135deg,#f0efff,#fff4f7);border:1px solid #e5ddff;box-shadow:0 18px 50px #6657e81f;z-index:3;pointer-events:none}
+.name-card small{color:#7167d9;font-size:11px;letter-spacing:1px;font-weight:800}.name-card h3{font-size:clamp(28px,5vw,48px);margin:12px 0 4px;overflow-wrap:anywhere}.name-card p{margin:0;color:var(--muted);font-size:13px}
+.toolbar{display:flex;flex-wrap:wrap;gap:7px;margin:10px 0}.btn{border:0;border-radius:11px;padding:11px 13px;font-weight:700;font-size:12px;cursor:pointer;transition:transform .15s,filter .15s;display:inline-flex;align-items:center;justify-content:center;gap:7px;font-family:inherit}.btn:hover{filter:brightness(.98);transform:translateY(-1px)}.primary{background:var(--purple);color:white;box-shadow:0 7px 16px #6657e82c}.celebrate{background:#fff0f4;color:#d8436a;border:1px solid #ffd5df}.soft{background:#fff;border:1px solid var(--line);color:var(--ink)}.active{background:#e9e7ff!important;color:#4d40ce!important;border-color:#c9c3ff!important}
+.panel{background:#fff;border:1px solid var(--line);border-radius:17px;padding:16px;box-shadow:0 7px 24px #27345b06}.panel h3{font-size:14px;margin:0 0 7px}.panel p{font-size:12px;line-height:1.7;color:var(--muted);margin:0 0 12px}aside{display:flex;flex-direction:column;gap:12px}
+.upload{border:1.5px dashed #c9c8f6;background:#fafaff;border-radius:13px;padding:13px;text-align:center}.upload .fileicon{font-size:24px}.upload strong{display:block;font-size:13px;margin:7px 0 4px}.upload span{font-size:11px;color:var(--muted);display:block}.upload input{display:none}.upload label{display:inline-flex;margin-top:10px;cursor:pointer}
+.status{font-size:12px;margin-top:9px;color:#4f46b9;overflow-wrap:anywhere}.stats{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:12px}.stat{background:#f7f8fc;padding:10px;border-radius:11px}.stat b{display:block;font-size:21px}.stat span{font-size:11px;color:var(--muted)}
+.names{max-height:100px;overflow:auto;display:flex;flex-wrap:wrap;gap:5px;margin-top:9px}.chip{font-size:11px;padding:6px 8px;border-radius:8px;background:#f2f3f9;color:#4c5367}
+input[type=text],select{width:100%;padding:10px;border:1px solid var(--line);border-radius:10px;font:inherit;font-size:12px;margin-bottom:8px;outline-color:var(--purple);background:#fff}
+.tools-grid{display:grid;grid-template-columns:1fr 1fr;gap:7px}.tool-label{display:block;font-size:11px;color:var(--muted);margin:6px 0}.color-row{display:flex;gap:7px;align-items:center;flex-wrap:wrap}.color-row input{width:34px;height:30px;padding:2px;border:1px solid var(--line);border-radius:7px;background:white}.width-row{display:flex;gap:8px;align-items:center}.width-row input{width:100%;accent-color:var(--purple)}.tiny{font-size:11px;color:var(--muted);line-height:1.6;margin-top:9px}
+.zoom-controls{display:flex;gap:6px;align-items:center;margin-right:auto}.zoom-controls .btn{padding:8px 11px}.zoom-level{font-size:11px;color:var(--muted);min-width:42px;text-align:center}
+.confetti{position:fixed;top:-20px;width:10px;height:15px;z-index:20;pointer-events:none;animation:fall linear forwards}
+@keyframes fall{to{transform:translate3d(var(--drift),110vh,0) rotate(850deg);opacity:.95}}
+
+.drawing-panel{display:flex;align-items:center;gap:10px 14px;flex-wrap:wrap;margin:0 0 10px;padding:10px 13px;border-radius:14px}
+.drawing-panel h3{margin:0;white-space:nowrap}
+.drawing-panel p{display:none}
+.drawing-panel .tools-grid{display:flex;gap:6px}
+.drawing-panel .btn{padding:9px 11px;white-space:nowrap}
+.drawing-panel .tool-label{margin:0;white-space:nowrap}
+.drawing-panel .color-row{gap:5px}
+.drawing-panel .color-row .btn{padding:8px 9px}
+.drawing-panel .color-row input{margin:0}
+.drawing-panel .width-row{width:110px}
+.drawing-panel .tiny{display:none}
+@media(max-width:560px){.drawing-panel{gap:8px;padding:9px}.drawing-panel h3{width:100%}.drawing-panel .color-row{flex:1}.drawing-panel .color-row .btn{padding:7px}.drawing-panel .width-row{width:90px}}
+
+@media(max-width:900px){main{grid-template-columns:1fr}.whiteboard{height:53vh;min-height:350px}aside{display:grid;grid-template-columns:repeat(2,minmax(0,1fr))}aside .panel:first-child{grid-column:1/-1}}
+@media(max-width:560px){header{align-items:flex-start}.header-tools{align-items:flex-end;flex-direction:column}.pill{display:none}.clock-pill{font-size:11px;padding:7px 9px}aside{display:flex}.whiteboard{height:50vh;min-height:340px}.board-top{align-items:flex-start;flex-direction:column}.toolbar .btn{flex:1}.zoom-controls{margin-right:0}.board-message span{font-size:12px}}
+
+.saved-classes{display:flex;flex-direction:column;gap:7px;margin-top:8px}.saved-class{display:flex;align-items:center;gap:6px;border:1px solid var(--line);border-radius:10px;padding:8px;background:#fff;cursor:pointer;transition:border-color .15s,background .15s,transform .15s}.saved-class:hover{border-color:#b8b0ff;background:#faf9ff;transform:translateY(-1px)}.saved-class:focus-visible{outline:2px solid var(--purple);outline-offset:2px}.saved-class .saved-name{flex:1;min-width:0;font-size:12px;font-weight:700;overflow-wrap:anywhere}.saved-class .btn{padding:7px 9px;font-size:11px;cursor:pointer}.saved-class.active-class{border-color:#8e83ff;background:#f5f3ff}
+</style>
+</head>
+<body>
+<header>
+ <div class="brand"><div class="logo">✦</div><div><h1>لوحتي</h1><div class="subtitle">سبورة تفاعلية للتعلّم والتشجيع</div></div></div>
+ <div class="header-tools"><div class="clock-pill" aria-live="off"><span id="clockTime">--:--:--</span><small id="clockZone">التوقيت المحلي للجهاز</small></div><div class="pill">✦ وضع الفصل الدراسي</div></div>
+</header>
+<main>
+ <section class="board-wrap">
+  <div class="board-top"><h2>✨ السبورة البيضاء</h2><span class="hint">اضغط على اللوحة وابدأ الرسم مباشرة، أو اختر تحريك اللوحة.</span></div>
+  <section class="panel drawing-panel">
+   <h3>🖌️ أدوات الرسم</h3><p>اختر الأداة واللون والسُمك. عند تشغيل وضع الرسم تختفي رسالة الترحيب من مساحة الرسم.</p>
+   <div class="tools-grid">
+    <button class="btn soft active" id="penBtn">✏️ قلم</button><button class="btn soft" id="eraserBtn">🧽 ممحاة</button>
+   </div>
+   <label class="tool-label" for="colorInput">لون القلم</label><div class="color-row"><input type="color" id="colorInput" value="#6657e8"><button class="btn soft" data-color="#20283b">أسود</button><button class="btn soft" data-color="#e84369">أحمر</button><button class="btn soft" data-color="#159d82">أخضر</button><button class="btn soft" data-color="#2778df">أزرق</button></div>
+   <label class="tool-label" for="widthInput">سُمك القلم: <span id="widthValue">4</span></label><div class="width-row"><input type="range" id="widthInput" min="1" max="30" value="4"></div>
+   <label class="tool-label" for="eraserWidthInput">سُمك الممحاة: <span id="eraserWidthValue">16</span></label><div class="width-row"><input type="range" id="eraserWidthInput" min="4" max="60" value="16"></div>
+   <div class="tiny">اللوحة قابلة للتحريك في جميع الاتجاهات، ويمكنك التكبير والتصغير. اختر «تحريك اللوحة» واسحبها بإصبعك أو بالفأرة.</div>
+  </section>
+  <div class="whiteboard" id="board">
+   <canvas id="drawing"></canvas>
+   <div class="board-message" id="welcome"><div class="spark">✍️</div><strong>سبورتك جاهزة!</strong><span>اضغط على اللوحة وابدأ الرسم مباشرة. استخدم زر «تحريك اللوحة» لتحريكها.</span></div>
+   <div class="name-card" id="nameCard"><small>✨ حان دورك!</small><h3 id="pickedName">اسم الطالب</h3><p>أنت تستطيع! ⭐</p></div>
+  </div>
+  <div class="toolbar">
+   <button class="btn primary" id="pickBtn">🎲 اختيار اسم عشوائي</button>
+   <button class="btn celebrate" id="confettiBtn">🎉 احتفل بالإجابة الصحيحة</button>
+    <button class="btn soft" id="panBtn">✋ تحريك اللوحة</button>
+   <button class="btn soft" id="clearBtn">🧹 مسح الرسومات</button>
+   <div class="zoom-controls"><button class="btn soft" id="zoomOut" aria-label="تصغير">−</button><span class="zoom-level" id="zoomLabel">100%</span><button class="btn soft" id="zoomIn" aria-label="تكبير">+</button><button class="btn soft" id="resetView">إعادة العرض</button></div>
+  </div>
+ </section>
+ <aside>
+
+  <section class="panel">
+   <h3>📚 استيراد قائمة الطلاب</h3><p>استورد ملف Excel أو CSV. تُقرأ الأسماء من العمود الأول في الورقة الأولى.</p>
+   <div class="upload"><div class="fileicon">📄</div><strong>اختر ملف الفصل الحالي</strong><span>‎.xlsx · ‎.xls · ‎.csv</span><label class="btn soft" for="fileInput" id="fileLabel">اختيار ملف الفصل</label><input id="fileInput" type="file" accept=".xlsx,.xls,.csv"></div>
+   <div class="status" id="fileStatus">اختر ملفًا جديدًا أو افتح فصلًا محفوظًا على هذا الجهاز.</div>
+   <div style="margin-top:12px"><strong style="font-size:13px">💾 الفصول المحفوظة على هذا الجهاز</strong><div id="savedClasses" class="saved-classes"><span class="tiny">لا توجد فصول محفوظة بعد.</span></div></div>
+   <div class="stats"><div class="stat"><b id="studentCount">0</b><span>عدد الطلاب</span></div><div class="stat"><b id="pickedCount">0</b><span>مرات الاختيار</span></div></div>
+   <div class="names" id="nameList"></div><div class="tiny">تُحفظ قوائم الأسماء في مساحة التخزين المحلية للمتصفح على هذا الجهاز، واضغط على مستطيل أي فصل محفوظ للتبديل إليه، أو استخدم زر الحذف. لا يتم رفع القوائم إلى خادم، ولن تنتقل تلقائيًا إلى جهاز أو متصفح آخر.</div>
+  </section>
+  <section class="panel">
+   <h3>➕ إضافة اسم يدويًا</h3><input id="manualName" type="text" placeholder="اكتب اسم الطالب هنا"><button class="btn soft" id="addNameBtn" style="width:100%">إضافة الاسم</button>
+  </section>
+  <section class="panel">
+   <h3>🎊 لحظة تشجيع!</h3><p>استخدم قصاصات الورق الملوّنة عند الإجابة الصحيحة أو عند بذل مجهود جميل.</p><div class="tools-grid"><button class="btn celebrate" id="smallBurst">🎉 احتفال صغير</button><button class="btn primary" id="bigBurst">🌈 احتفال كبير</button></div>
+  </section>
+ </aside>
+</main>
+<footer>لوحتي · بيئة صفية ممتعة ومشجّعة</footer>
+<script>
+(() => {
+ const $ = id => document.getElementById(id);
+ let names=[],picked=0,panMode=false,tool='pen',drawing=false,last=null,activeClassId=null;
+ const STORAGE_KEY='brightboard_saved_classes_v1'; let savedClasses=loadSavedClasses();
+ function loadSavedClasses(){try{return JSON.parse(localStorage.getItem(STORAGE_KEY)||'[]')}catch(e){return []}}
+ function persistClasses(){try{localStorage.setItem(STORAGE_KEY,JSON.stringify(savedClasses))}catch(e){$('fileStatus').textContent='تعذّر الحفظ في المتصفح؛ قد تكون مساحة التخزين ممتلئة أو محظورة.'}}
+ function safeId(){return 'class_'+Date.now().toString(36)+'_'+Math.random().toString(36).slice(2,7)}
+ function saveActiveClass(){if(!activeClassId)return;const c=savedClasses.find(x=>x.id===activeClassId);if(c){c.names=[...names];c.picked=picked;c.updated=Date.now();persistClasses();renderSavedClasses()}}
+ function renderSavedClasses(){const root=$('savedClasses');root.innerHTML='';if(!savedClasses.length){const m=document.createElement('span');m.className='tiny';m.textContent='لا توجد فصول محفوظة بعد.';root.appendChild(m);return}savedClasses.forEach(c=>{const row=document.createElement('div');row.className='saved-class'+(c.id===activeClassId?' active-class':'');row.setAttribute('role','button');row.setAttribute('tabindex','0');row.setAttribute('aria-label','اختيار الفصل '+c.name);row.title='اضغط هنا لفتح هذا الفصل';row.addEventListener('click',()=>activateClass(c.id));row.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();activateClass(c.id)}});const title=document.createElement('span');title.className='saved-name';title.textContent=(c.id===activeClassId?'✓ ':'')+c.name+' · '+c.names.length+' طالب';const del=document.createElement('button');del.className='btn soft';del.textContent='حذف';del.setAttribute('aria-label','حذف '+c.name);del.addEventListener('click',e=>{e.stopPropagation();if(!confirm('حذف الفصل المحفوظ «'+c.name+'» من هذا الجهاز؟'))return;savedClasses=savedClasses.filter(x=>x.id!==c.id);if(activeClassId===c.id){activeClassId=null;names=[];picked=0;renderNames();$('fileLabel').textContent='اختيار ملف الفصل';$('fileStatus').textContent='تم حذف الفصل المحفوظ من هذا الجهاز.'}persistClasses();renderSavedClasses()});row.append(title,del);root.appendChild(row)})}
+ function activateClass(id){const c=savedClasses.find(x=>x.id===id);if(!c)return;activeClassId=c.id;names=[...c.names];picked=c.picked||0;$('nameCard').style.display='none';$('welcome').style.display='block';$('fileLabel').textContent='تغيير / استيراد ملف فصل';renderNames();renderSavedClasses();$('fileStatus').textContent='تم فتح الفصل المحفوظ: '+c.name+'، ويمكنك تغييره أو حذفه لاحقًا.'}
+ let scale=1, offsetX=0, offsetY=0;
+ const canvas=$('drawing'),ctx=canvas.getContext('2d'),board=$('board');
+ const strokes=[]; let currentStroke=null;
+ const colors=['#ff5d8f','#ffbe0b','#3a86ff','#06d6a0','#8338ec','#fb5607','#00b4d8'];
+ function resizeCanvas(){const r=board.getBoundingClientRect(),dpr=window.devicePixelRatio||1;canvas.width=Math.round(r.width*dpr);canvas.height=Math.round(r.height*dpr);renderCanvas()}
+ function renderCanvas(){
+  const dpr=window.devicePixelRatio||1;ctx.setTransform(1,0,0,1,0,0);ctx.clearRect(0,0,canvas.width,canvas.height);
+  ctx.fillStyle='#fff';ctx.fillRect(0,0,canvas.width,canvas.height);
+  ctx.save();ctx.scale(dpr,dpr);ctx.translate(offsetX,offsetY);ctx.scale(scale,scale);
+  const r=board.getBoundingClientRect();const left=-offsetX/scale,top=-offsetY/scale,right=left+r.width/scale,bottom=top+r.height/scale;
+  ctx.fillStyle='#f0f1f6';for(let x=Math.floor(left/24)*24;x<right;x+=24)for(let y=Math.floor(top/24)*24;y<bottom;y+=24){ctx.beginPath();ctx.arc(x,y,0.8,0,Math.PI*2);ctx.fill()}
+  for(const s of strokes)drawStroke(s);if(currentStroke)drawStroke(currentStroke);ctx.restore();
+ }
+ function drawStroke(s){if(!s.points.length)return;ctx.save();ctx.lineCap='round';ctx.lineJoin='round';ctx.lineWidth=s.width;ctx.strokeStyle=s.tool==='eraser'?'#ffffff':s.color;ctx.globalCompositeOperation='source-over';ctx.beginPath();ctx.moveTo(s.points[0].x,s.points[0].y);for(let i=1;i<s.points.length;i++)ctx.lineTo(s.points[i].x,s.points[i].y);if(s.points.length===1){ctx.lineTo(s.points[0].x+.01,s.points[0].y+.01)}ctx.stroke();ctx.restore()}
+ window.addEventListener('resize',resizeCanvas);resizeCanvas();
+ function renderNames(){ $('studentCount').textContent=names.length;$('pickedCount').textContent=picked;$('nameList').innerHTML='';names.slice(0,80).forEach(n=>{const s=document.createElement('span');s.className='chip';s.textContent=n;$('nameList').appendChild(s)});if(names.length>80){const s=document.createElement('span');s.className='chip';s.textContent=`+${names.length-80} المزيد`;$('nameList').appendChild(s)} }
+ function addName(n){n=String(n||'').trim();if(n&&!names.some(x=>x.toLowerCase()===n.toLowerCase())){names.push(n);renderNames();saveActiveClass();return true}return false}
+ $('fileInput').addEventListener('change',async e=>{const file=e.target.files[0];if(!file)return;try{let rows=[];if(file.name.toLowerCase().endsWith('.csv')){const txt=await file.text();rows=txt.split(/\r?\n/).map(line=>line.split(','))}else{if(!window.XLSX){$('fileStatus').textContent='تعذّر تحميل قارئ Excel. جرّب استيراد ملف CSV.';return}const data=await file.arrayBuffer(),wb=XLSX.read(data,{type:'array'});rows=XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]],{header:1,defval:''})}let extracted=rows.map(r=>r&&r.length?String(r[0]??'').trim():'').filter(Boolean);if(extracted.length&&/^(name|student name|student|names|الاسم|اسم الطالب|الأسماء)$/i.test(extracted[0]))extracted.shift();const unique=[];extracted.forEach(n=>{if(!unique.some(x=>x.toLowerCase()===n.toLowerCase()))unique.push(n)});if(!unique.length){$('fileStatus').textContent='لم يتم العثور على أسماء في العمود الأول؛ لم تتغير القائمة الحالية.';return}names=unique;picked=0;activeClassId=safeId();savedClasses.push({id:activeClassId,name:file.name,names:[...names],picked:0,updated:Date.now()});persistClasses();$('nameCard').style.display='none';$('welcome').style.display='block';renderNames();renderSavedClasses();$('fileStatus').textContent=`تم حفظ الفصل «${file.name}» على هذا الجهاز، ويحتوي على ${names.length} اسمًا. يمكنك فتحه لاحقًا حتى بعد إغلاق المنصة.`; $('fileLabel').textContent='تغيير / استيراد ملف فصل'}catch(err){$('fileStatus').textContent='تعذّرت قراءة الملف. جرّب حفظه بصيغة XLSX أو CSV.'}finally{e.target.value=''}});
+ $('addNameBtn').addEventListener('click',()=>{const i=$('manualName');if(addName(i.value)){i.value='';$('fileStatus').textContent='تمت إضافة الاسم إلى القائمة.'}else $('fileStatus').textContent='اكتب اسمًا جديدًا أولًا.'});$('manualName').addEventListener('keydown',e=>{if(e.key==='Enter')$('addNameBtn').click()});
+ $('pickBtn').addEventListener('click',()=>{if(!names.length){$('fileStatus').textContent='استورد قائمة الطلاب أو أضف اسمًا أولًا.';return}const n=names[Math.floor(Math.random()*names.length)];$('pickedName').textContent=n;$('nameCard').style.display='block';$('welcome').style.display='none';picked++;renderNames();saveActiveClass();$('nameCard').animate([{transform:'translate(-50%,-50%) scale(.82)',opacity:.4},{transform:'translate(-50%,-50%) scale(1.04)',opacity:1},{transform:'translate(-50%,-50%) scale(1)',opacity:1}],{duration:380,easing:'ease-out'})});
+ function burst(amount){for(let i=0;i<amount;i++){const el=document.createElement('i');el.className='confetti';el.style.left=(Math.random()*100)+'vw';el.style.background=colors[Math.floor(Math.random()*colors.length)];el.style.width=(6+Math.random()*8)+'px';el.style.height=(9+Math.random()*12)+'px';el.style.borderRadius=Math.random()>.5?'2px':'50%';el.style.setProperty('--drift',((Math.random()-.5)*260)+'px');el.style.animationDuration=(2.2+Math.random()*2.5)+'s';el.style.animationDelay=(Math.random()*.35)+'s';document.body.appendChild(el);setTimeout(()=>el.remove(),5200)}}
+ $('confettiBtn').addEventListener('click',()=>burst(110));$('smallBurst').addEventListener('click',()=>burst(65));$('bigBurst').addEventListener('click',()=>burst(220));
+ function updateCursor(){canvas.style.cursor=panMode?'grab':(tool==='eraser'?'cell':'crosshair')}
+ $('panBtn').addEventListener('click',()=>{panMode=!panMode;if(panMode)$('panBtn').classList.add('active');else $('panBtn').classList.remove('active');updateCursor()});
+ $('penBtn').addEventListener('click',()=>{tool='pen';$('penBtn').classList.add('active');$('eraserBtn').classList.remove('active');updateCursor()});$('eraserBtn').addEventListener('click',()=>{tool='eraser';$('eraserBtn').classList.add('active');$('penBtn').classList.remove('active');updateCursor()});
+ $('colorInput').addEventListener('input',e=>{ctx.strokeStyle=e.target.value});document.querySelectorAll('[data-color]').forEach(b=>b.addEventListener('click',()=>{$('colorInput').value=b.dataset.color;tool='pen';$('penBtn').classList.add('active');$('eraserBtn').classList.remove('active');updateCursor()}));
+ $('widthInput').addEventListener('input',e=>$('widthValue').textContent=e.target.value);$('eraserWidthInput').addEventListener('input',e=>$('eraserWidthValue').textContent=e.target.value);
+ function point(e){const r=canvas.getBoundingClientRect();return{x:(e.clientX-r.left-offsetX)/scale,y:(e.clientY-r.top-offsetY)/scale}}
+ canvas.addEventListener('pointerdown',e=>{canvas.setPointerCapture(e.pointerId);last={x:e.clientX,y:e.clientY};if(panMode){canvas.style.cursor='grabbing';return}$('welcome').style.display='none';$('nameCard').style.display='none';drawing=true;const width=tool==='eraser'?Number($('eraserWidthInput').value):Number($('widthInput').value);currentStroke={tool,color:$('colorInput').value,width:width/scale,points:[point(e)]};renderCanvas()});
+ canvas.addEventListener('pointermove',e=>{if(!last)return;if(panMode){offsetX+=e.clientX-last.x;offsetY+=e.clientY-last.y;last={x:e.clientX,y:e.clientY};renderCanvas();return}if(drawing&&currentStroke){currentStroke.points.push(point(e));last={x:e.clientX,y:e.clientY};renderCanvas()}});
+ function stop(){if(currentStroke){strokes.push(currentStroke);currentStroke=null}drawing=false;last=null;updateCursor()}canvas.addEventListener('pointerup',stop);canvas.addEventListener('pointercancel',stop);canvas.addEventListener('lostpointercapture',stop);
+ function zoom(f){const r=board.getBoundingClientRect(),cx=r.width/2,cy=r.height/2;const next=Math.max(.25,Math.min(4,scale*f));offsetX=cx-(cx-offsetX)*(next/scale);offsetY=cy-(cy-offsetY)*(next/scale);scale=next;$('zoomLabel').textContent=Math.round(scale*100)+'%';renderCanvas()}
+ $('zoomIn').addEventListener('click',()=>zoom(1.2));$('zoomOut').addEventListener('click',()=>zoom(1/1.2));$('resetView').addEventListener('click',()=>{scale=1;offsetX=0;offsetY=0;$('zoomLabel').textContent='100%';renderCanvas()});
+ $('clearBtn').addEventListener('click',()=>{strokes.length=0;currentStroke=null;renderCanvas();$('nameCard').style.display='none';$('welcome').style.display='flex'});
+ board.addEventListener('wheel',e=>{if(e.ctrlKey||e.metaKey){e.preventDefault();zoom(e.deltaY<0?1.08:1/1.08)}},{passive:false});
+ function updateClock(){const now=new Date();$('clockTime').textContent=new Intl.DateTimeFormat('ar-SA',{hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:true}).format(now);const zone=Intl.DateTimeFormat().resolvedOptions().timeZone||'التوقيت المحلي';$('clockZone').textContent=zone.replaceAll('_',' ')}
+ updateClock();setInterval(updateClock,1000);
+ renderNames();
+})();
+</script>
+</body></html>
